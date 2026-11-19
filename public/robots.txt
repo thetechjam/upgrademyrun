@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://upgrademyrun.com/sitemap-index.xml
