@@ -1,0 +1,453 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { Image, getImage } from 'astro:assets';
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import ScoreBadge from '../../components/ScoreBadge.astro';
+import BuyButtons from '../../components/BuyButtons.astro';
+import ReviewCard from '../../components/ReviewCard.astro';
+import ProsCons from '../../components/ProsCons.astro';
+import SpecsTable from '../../components/SpecsTable.astro';
+import { CATEGORIES } from '../../data/categories';
+import { formatDate, formatPrice, getRelatedReviews, getReviews, reviewUrl, type Review } from '../../lib/content';
+import { absoluteUrl, breadcrumbJsonLd, reviewProductJsonLd } from '../../lib/jsonld';
+
+export const getStaticPaths = (async () => {
+  const reviews = await getReviews();
+  return reviews.map((review) => ({ params: { slug: review.id }, props: { review } }));
+}) satisfies GetStaticPaths;
+
+interface Props {
+  review: Review;
+}
+const { review } = Astro.props;
+const { data } = review;
+const { Content } = await render(review);
+const cat = CATEGORIES[data.category];
+const url = reviewUrl(review.id);
+const related = await getRelatedReviews(review, 3);
+
+const crumbs = [
+  { name: 'Home', url: '/' },
+  { name: cat.name, url: `/${cat.slug}/` },
+  { name: data.productName, url },
+];
+
+const schemaImage = await getImage({ src: data.heroImage, width: 1200, format: 'jpeg', quality: 80 });
+const jsonLd = [
+  reviewProductJsonLd({
+    name: data.productName,
+    brand: data.brand,
+    description: data.description,
+    image: absoluteUrl(schemaImage.src),
+    url,
+    rating: data.rating,
+    reviewBody: data.verdict,
+    datePublished: data.date,
+    ...(data.updated ? { dateModified: data.updated } : {}),
+    title: data.title,
+    offers: data.affiliateLinks,
+    price: data.price,
+  }),
+  breadcrumbJsonLd(crumbs),
+];
+const lowest = data.affiliateLinks.reduce<number | undefined>(
+  (min, l) => (l.price !== undefined && (min === undefined || l.price < min) ? l.price : min),
+  undefined,
+);
+---
+
+<BaseLayout
+  title={data.title}
+  description={data.description}
+  image={data.heroImage}
+  imageAlt={data.heroAlt}
+  type="article"
+  publishedTime={data.date}
+  modifiedTime={data.updated}
+  jsonLd={jsonLd}
+>
+  <article class="review">
+    <header class="rv-hero">
+      <div class="rv-hero-text container-left">
+        <Breadcrumb items={crumbs} />
+        <div class="rv-kickers">
+          <a class="kicker" href={`/${cat.slug}/`}>{cat.name} review</a>
+          {data.sample && <span class="sample-badge">Sample review — placeholder content</span>}
+        </div>
+        <h1 class="display rv-title">{data.title}</h1>
+        <p class="rv-dek">{data.description}</p>
+        <p class="rv-byline">
+          <span>By the Upgrade My Run test team</span>
+          <span aria-hidden="true">·</span>
+          <time datetime={data.date.toISOString()}>{formatDate(data.date)}</time>
+          {
+            data.updated && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>
+                  Updated <time datetime={data.updated.toISOString()}>{formatDate(data.updated)}</time>
+                </span>
+              </>
+            )
+          }
+        </p>
+      </div>
+      <div class="rv-hero-media">
+        <div class="rv-img grain">
+          <Image
+            src={data.heroImage}
+            alt={data.heroAlt}
+            widths={[640, 960, 1280, 1600, 2000]}
+            sizes="(min-width: 1000px) 58vw, 100vw"
+            loading="eager"
+            fetchpriority="high"
+          />
+        </div>
+        <div class="rv-score-wrap">
+          <ScoreBadge rating={data.rating} size="lg" />
+          <span class="rv-score-label">Our score</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="container rv-layout">
+      <div class="rv-main">
+        <section class="verdict" aria-labelledby="verdict-title">
+          <h2 id="verdict-title" class="verdict-label">The verdict</h2>
+          <p class="verdict-text">{data.verdict}</p>
+          {
+            data.bestFor && (
+              <p class="verdict-best">
+                <strong>Best for:</strong> {data.bestFor}
+              </p>
+            )
+          }
+        </section>
+
+        <ProsCons pros={data.pros} cons={data.cons} />
+
+        <div class="prose rv-body">
+          <Content />
+        </div>
+
+        <SpecsTable specs={data.specs} title={`${data.productName} specs`} />
+
+        {
+          data.affiliateLinks.length > 0 && (
+            <section class="where" id="where-to-buy" aria-labelledby="where-title">
+              <h2 id="where-title" class="display">
+                Where to buy
+              </h2>
+              <p class="muted where-sub">
+                Prices checked at time of publishing{data.priceNote ? ` — ${data.priceNote.toLowerCase()}` : ''}.
+              </p>
+              <BuyButtons links={data.affiliateLinks} productName={data.productName} layout="row" />
+            </section>
+          )
+        }
+      </div>
+
+      <aside class="rv-aside" aria-label="At a glance">
+        <div class="glance">
+          <p class="glance-label">At a glance</p>
+          <div class="glance-top">
+            <ScoreBadge rating={data.rating} size="md" />
+            <div>
+              <p class="glance-name">{data.productName}</p>
+              <p class="glance-brand">{data.brand}</p>
+            </div>
+          </div>
+          <dl class="glance-facts">
+            <div>
+              <dt>Price</dt>
+              <dd>
+                {formatPrice(data.price)}
+                {lowest !== undefined && lowest < data.price && <span class="from">from {formatPrice(lowest)}</span>}
+              </dd>
+            </div>
+            {
+              data.bestFor && (
+                <div>
+                  <dt>Best for</dt>
+                  <dd class="small">{data.bestFor}</dd>
+                </div>
+              )
+            }
+          </dl>
+          <BuyButtons links={data.affiliateLinks} productName={data.productName} />
+        </div>
+      </aside>
+    </div>
+  </article>
+
+  {
+    related.length > 0 && (
+      <section class="section container related" aria-labelledby="related-title">
+        <div class="section-head">
+          <div>
+            <p class="kicker">Keep reading</p>
+            <h2 id="related-title" class="display">
+              Related reviews
+            </h2>
+          </div>
+          <a href={`/${cat.slug}/`} class="more">
+            More {cat.shortName.toLowerCase()} <span aria-hidden="true">→</span>
+          </a>
+        </div>
+        <div class="related-grid">
+          {related.map((r) => (
+            <ReviewCard review={r} />
+          ))}
+        </div>
+      </section>
+    )
+  }
+</BaseLayout>
+
+<style>
+  /* Hero: text left, image bleeding to the right edge */
+  .rv-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    align-items: stretch;
+    border-bottom: 1px solid var(--rule);
+  }
+  .rv-hero-text {
+    padding: clamp(2rem, 5vw, 4.5rem) clamp(1.5rem, 4vw, 4rem) clamp(2rem, 5vw, 4rem)
+      max(var(--gutter), calc((100vw - var(--max-w)) / 2 + var(--gutter)));
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.25rem;
+  }
+  .rv-kickers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    align-items: center;
+    margin-top: 1rem;
+  }
+  .rv-kickers .kicker {
+    text-decoration: none;
+  }
+  .rv-title {
+    font-size: clamp(2.6rem, 1.5rem + 3.6vw, 5.4rem);
+  }
+  .rv-dek {
+    padding-right: clamp(0rem, 3vw, 3rem);
+    font-family: var(--font-serif);
+    font-size: clamp(1.1rem, 1rem + 0.4vw, 1.35rem);
+    line-height: 1.5;
+    color: var(--ink-soft);
+    max-width: 36rem;
+  }
+  .rv-byline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--ink-mute);
+  }
+  .rv-hero-media {
+    position: relative;
+    min-height: clamp(320px, 45vw, 720px);
+  }
+  .rv-img {
+    position: absolute;
+    inset: 0;
+    background: var(--navy-900);
+  }
+  .rv-img :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .rv-score-wrap {
+    position: absolute;
+    z-index: 4;
+    left: clamp(-4.5rem, -4vw, -2rem);
+    bottom: clamp(1.5rem, 4vw, 3rem);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .rv-score-label {
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    padding: 0.25rem 0.6rem;
+    border-radius: 2px;
+  }
+
+  /* Body layout */
+  .rv-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: clamp(2rem, 5vw, 5rem);
+    padding-top: var(--space-2xl);
+  }
+  .rv-main {
+    min-width: 0;
+    display: grid;
+    gap: var(--space-2xl);
+    max-width: 54rem;
+  }
+  .verdict {
+    position: relative;
+    padding: clamp(1.5rem, 3vw, 2.25rem);
+    background: var(--bg-elev);
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius);
+  }
+  .verdict-label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+  }
+  .verdict-text {
+    margin-top: 0.85rem;
+    font-family: var(--font-serif);
+    font-size: clamp(1.1rem, 1rem + 0.45vw, 1.35rem);
+    line-height: 1.55;
+    color: var(--ink);
+  }
+  .verdict-best {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--rule);
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+  }
+  .verdict-best strong {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.14em;
+    color: var(--ink);
+  }
+  .where h2 {
+    font-size: var(--step-3);
+  }
+  .where-sub {
+    margin-block: 0.5rem 1.25rem;
+    font-size: 0.9rem;
+  }
+
+  .rv-aside {
+    position: relative;
+  }
+  .glance {
+    position: sticky;
+    top: calc(var(--header-h) + 1.5rem);
+    padding: 1.5rem;
+    background: var(--bg-elev);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-l);
+    box-shadow: var(--shadow);
+  }
+  .glance-label {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .glance-top {
+    margin-top: 1rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+  .glance-name {
+    font-weight: 750;
+    line-height: 1.25;
+  }
+  .glance-brand {
+    font-size: 0.85rem;
+    color: var(--ink-mute);
+  }
+  .glance-facts {
+    margin: 1.25rem 0;
+    border-top: 1px solid var(--rule);
+  }
+  .glance-facts div {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding-block: 0.7rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .glance-facts dt {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .glance-facts dd {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    line-height: 1;
+    text-align: right;
+  }
+  .glance-facts dd.small {
+    font-family: var(--font-sans);
+    font-size: 0.88rem;
+    line-height: 1.35;
+    font-weight: 600;
+  }
+  .from {
+    display: block;
+    margin-top: 0.3rem;
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--accent-ink);
+  }
+
+  .related-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+    gap: var(--space-xl) clamp(1.25rem, 3vw, 2.5rem);
+  }
+
+  @media (max-width: 999px) {
+    .rv-hero {
+      grid-template-columns: 1fr;
+    }
+    .rv-hero-text {
+      padding-inline: var(--gutter);
+      order: 2;
+    }
+    .rv-hero-media {
+      order: 1;
+      min-height: 0;
+      aspect-ratio: 4 / 3;
+    }
+    .rv-score-wrap {
+      left: auto;
+      right: var(--gutter);
+      bottom: -2.5rem;
+    }
+    .rv-layout {
+      grid-template-columns: 1fr;
+    }
+    .rv-aside {
+      order: -1;
+    }
+    .glance {
+      position: static;
+    }
+  }
+</style>

@@ -1,0 +1,167 @@
+---
+import { Image } from 'astro:assets';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import HowWeTest from '../components/HowWeTest.astro';
+import flatlay from '../assets/images/gear-flatlay.webp';
+import logoMark from '../assets/images/logo-mark.webp';
+import { breadcrumbJsonLd, organizationJsonLd } from '../lib/jsonld';
+
+const crumbs = [
+  { name: 'Home', url: '/' },
+  { name: 'About', url: '/about/' },
+];
+const scoring = [
+  { range: '9.0 – 10', label: 'Exceptional', body: 'Class-leading. We’d buy it with our own money tomorrow.' },
+  { range: '8.0 – 8.9', label: 'Excellent', body: 'A clear recommendation with minor, specific trade-offs.' },
+  { range: '7.0 – 7.9', label: 'Good', body: 'Solid for the right runner — read the “who it’s for” section.' },
+  { range: '5.0 – 6.9', label: 'Mixed', body: 'Real compromises. Usually better options at the price.' },
+  { range: '0 – 4.9', label: 'Skip it', body: 'Doesn’t do the job it promises. We’ll tell you why.' },
+];
+---
+
+<BaseLayout
+  title="About & How We Test"
+  description="Upgrade My Run is an independent running gear magazine. Here’s who we are, how we test shoes, watches and headphones, and how our scores work."
+  image={flatlay}
+  jsonLd={[organizationJsonLd(), breadcrumbJsonLd(crumbs)]}
+>
+  <PageHero
+    title="Built on early miles"
+    kicker="About Upgrade My Run"
+    image={flatlay}
+    imageAlt="Overhead flat lay of running shoes, a GPS watch, headphones and apparel on dark slate with a single orange accent"
+    crumbs={crumbs}
+    size="tall"
+  />
+
+  <section class="container mission">
+    <div class="mission-mark" data-reveal>
+      <Image src={logoMark} alt="Upgrade My Run logo mark" width={160} height={160} />
+    </div>
+    <div class="prose mission-copy">
+      <p>
+        Upgrade My Run started with a simple frustration: most gear reviews read like spec sheets, and most spec sheets
+        read like ads. We wanted reviews written by people who actually head out the door at 5:30am — in the cold, the
+        dark and the rain — and who care whether a shoe still feels good at mile 300.
+      </p>
+      <p>
+        So that’s what we do. We run the gear, we measure what can be measured, and we tell you plainly what it’s good
+        at, where it falls short, and who should buy it. No hype, no sponsored scores, no “10 best” lists padded with
+        products nobody tested.
+      </p>
+      <h2>Our independence</h2>
+      <p>
+        Brands don’t pay for coverage, don’t see reviews before publication and don’t get to change a score. When we
+        receive a product on loan we say so, and it goes back when testing ends. We fund the site through affiliate
+        links — read exactly how on our <a href="/disclosure/">disclosure page</a> — and those relationships never
+        influence what we recommend.
+      </p>
+      <h2>Corrections &amp; updates</h2>
+      <p>
+        Gear changes and so do prices. We revisit reviews when products are updated or when long-term durability tells
+        a different story, and every review shows the date it was last updated.
+      </p>
+    </div>
+  </section>
+
+  <HowWeTest />
+
+  <section class="section container" aria-labelledby="scores-title">
+    <div class="section-head">
+      <div>
+        <p class="kicker">The scale</p>
+        <h2 id="scores-title" class="display">How our scores work</h2>
+      </div>
+      <p class="muted scale-note">Every product is scored out of 10, to one decimal place.</p>
+    </div>
+    <dl class="scale">
+      {
+        scoring.map((s, i) => (
+          <div class="scale-row" data-reveal style={`--reveal-delay:${i * 60}ms`}>
+            <dt>
+              <span class="scale-range display">{s.range}</span>
+              <span class="scale-label">{s.label}</span>
+            </dt>
+            <dd>{s.body}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </section>
+
+  <p class="container placeholder-note muted">
+    Placeholder copy — final team bios and testing details to come before launch.
+  </p>
+</BaseLayout>
+
+<style>
+  .mission {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: clamp(2rem, 6vw, 6rem);
+    padding-block: var(--space-2xl);
+  }
+  .mission-mark :global(img) {
+    width: 160px;
+    height: auto;
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+  }
+  .mission-copy > p:first-child::first-letter {
+    font-size: 4.2em;
+  }
+  .scale {
+    margin: 0;
+    border-top: 2px solid var(--ink);
+  }
+  .scale-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    gap: 1.5rem;
+    align-items: center;
+    padding-block: 1.25rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .scale-row dt {
+    display: flex;
+    align-items: baseline;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+  }
+  .scale-range {
+    font-size: clamp(1.8rem, 1.2rem + 2vw, 3rem);
+    min-width: 6ch;
+  }
+  .scale-row:first-child .scale-range {
+    color: var(--accent);
+  }
+  .scale-label {
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .scale-row dd {
+    margin: 0;
+    color: var(--ink-soft);
+  }
+  .scale-note {
+    max-width: 22rem;
+  }
+  .placeholder-note {
+    font-size: 0.8rem;
+  }
+  @media (max-width: 760px) {
+    .mission {
+      grid-template-columns: 1fr;
+    }
+    .mission-mark :global(img) {
+      width: 96px;
+    }
+    .scale-row {
+      grid-template-columns: 1fr;
+      gap: 0.4rem;
+    }
+  }
+</style>

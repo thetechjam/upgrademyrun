@@ -1,0 +1,97 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import { breadcrumbJsonLd } from '../lib/jsonld';
+
+const crumbs = [
+  { name: 'Home', url: '/' },
+  { name: 'Affiliate Disclosure', url: '/disclosure/' },
+];
+const updated = new Date('2026-11-19T00:00:00Z');
+---
+
+<BaseLayout
+  title="Affiliate Disclosure"
+  description="How Upgrade My Run makes money: affiliate links, the Amazon Associates program, and why commissions never influence our reviews or scores."
+  jsonLd={[breadcrumbJsonLd(crumbs)]}
+>
+  <PageHero
+    title="Affiliate disclosure"
+    kicker="How we make money"
+    lede="Short version: when you buy through some links on this site we may earn a small commission, at no extra cost to you. It never changes what we say."
+    crumbs={crumbs}
+  />
+
+  <div class="container section">
+    <div class="prose disclosure">
+      <p>
+        Upgrade My Run is reader-supported. To keep our reviews free and independent, some of the links on this site
+        are affiliate links. If you click one and make a purchase, we may receive a commission from the retailer. The
+        price you pay is the same whether you use our link or not.
+      </p>
+
+      <h2>What this means for our reviews</h2>
+      <ul>
+        <li>
+          <strong>Scores are never for sale.</strong> Brands and retailers cannot pay for a review, a higher score, or a
+          place in a best-of guide.
+        </li>
+        <li>
+          <strong>We recommend products regardless of commission.</strong> If the best option has no affiliate program,
+          we still recommend it.
+        </li>
+        <li>
+          <strong>Affiliate links are clearly marked.</strong> Buy buttons and retailer links that may earn us a commission
+          are labelled with a disclosure nearby and use <code>rel="sponsored"</code> so search engines know too.
+        </li>
+        <li>
+          <strong>Loaned products go back.</strong> When a brand loans us a product for testing, we say so in the review,
+          and return it when testing ends.
+        </li>
+      </ul>
+
+      <h2>Amazon Associates</h2>
+      <p>
+        Upgrade My Run is a participant in the Amazon Services LLC Associates Program, an affiliate advertising program
+        designed to provide a means for sites to earn advertising fees by advertising and linking to Amazon.com. As an
+        Amazon Associate we earn from qualifying purchases.
+      </p>
+
+      <h2>Other retail partners</h2>
+      <p>
+        We may also participate in affiliate programs operated by other running retailers and networks. These programs
+        work the same way: a small commission on qualifying purchases, at no additional cost to you.
+      </p>
+
+      <h2>FTC compliance</h2>
+      <p>
+        This disclosure is provided in accordance with the U.S. Federal Trade Commission’s Guides Concerning the Use of
+        Endorsements and Testimonials in Advertising (16 CFR Part 255). We aim to make our material connections clear
+        and conspicuous wherever they appear.
+      </p>
+
+      <h2>Questions</h2>
+      <p>
+        If you have questions about this policy or how we work with brands, see our <a href="/about/">About page</a>.
+      </p>
+
+      <p class="note">
+        Placeholder policy text — to be reviewed before launch. Last updated
+        <time datetime={updated.toISOString()}>November 19, 2026</time>.
+      </p>
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .disclosure {
+    margin-inline: auto;
+  }
+  .note {
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    color: var(--ink-mute);
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+  }
+</style>

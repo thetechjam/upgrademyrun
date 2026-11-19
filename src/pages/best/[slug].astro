@@ -1,0 +1,481 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { Image } from 'astro:assets';
+import { getEntries, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import ScoreBadge from '../../components/ScoreBadge.astro';
+import BuyButtons from '../../components/BuyButtons.astro';
+import { CATEGORIES } from '../../data/categories';
+import { formatDate, formatPrice, getRoundups, reviewUrl, roundupUrl, specValue, type Roundup } from '../../lib/content';
+import { absoluteUrl, breadcrumbJsonLd, itemListJsonLd } from '../../lib/jsonld';
+import { getImage } from 'astro:assets';
+
+export const getStaticPaths = (async () => {
+  const roundups = await getRoundups();
+  return roundups.map((roundup) => ({ params: { slug: roundup.id }, props: { roundup } }));
+}) satisfies GetStaticPaths;
+
+interface Props {
+  roundup: Roundup;
+}
+const { roundup } = Astro.props;
+const { data } = roundup;
+const { Content } = await render(roundup);
+const reviews = await getEntries(data.picks.map((p) => p.review));
+const picks = data.picks
+  .map((p, i) => ({ ...p, entry: reviews[i] }))
+  .filter((p): p is typeof p & { entry: NonNullable<typeof p.entry> } => Boolean(p.entry) && !p.entry?.data.draft);
+
+const url = roundupUrl(roundup.id);
+const crumbs = [
+  { name: 'Home', url: '/' },
+  { name: 'Best Of', url: '/best/' },
+  { name: data.title, url },
+];
+const pickImages = await Promise.all(
+  picks.map((p) => getImage({ src: p.entry.data.heroImage, width: 1200, format: 'jpeg', quality: 80 })),
+);
+const jsonLd = [
+  itemListJsonLd({
+    name: data.title,
+    url,
+    items: picks.map((p, i) => ({
+      name: p.entry.data.productName,
+      url: reviewUrl(p.entry.id),
+      image: absoluteUrl(pickImages[i]?.src ?? ''),
+    })),
+  }),
+  breadcrumbJsonLd(crumbs),
+];
+const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+---
+
+<BaseLayout
+  title={data.title}
+  description={data.description}
+  image={data.heroImage}
+  imageAlt={data.heroAlt}
+  type="article"
+  publishedTime={data.date}
+  modifiedTime={data.updated}
+  jsonLd={jsonLd}
+>
+  <PageHero title={data.title} kicker="Best of" image={data.heroImage} imageAlt={data.heroAlt} crumbs={crumbs} size="tall">
+    <p class="hero-meta">
+      <span>{picks.length} picks</span>
+      <span aria-hidden="true">·</span>
+      <time datetime={(data.updated ?? data.date).toISOString()}>
+        {data.updated ? 'Updated ' : ''}{formatDate(data.updated ?? data.date)}
+      </time>
+      {data.sample && <span class="sample-badge on-dark">Sample roundup — placeholder content</span>}
+    </p>
+  </PageHero>
+
+  <div class="container">
+    <p class="intro" data-reveal>{data.intro}</p>
+
+    <!-- Winners -->
+    <section aria-labelledby="winners-title" class="winners-wrap">
+      <h2 id="winners-title" class="sr-only">The winners</h2>
+      <ol class="winners" role="list">
+        {
+          picks.map((p, i) => (
+            <li class="winner" data-reveal style={`--reveal-delay:${i * 90}ms`}>
+              <a href={`#${slugify(p.entry.id)}`} class="winner-link">
+                <div class="winner-media zoom grain">
+                  <Image
+                    src={p.entry.data.heroImage}
+                    alt={p.entry.data.heroAlt}
+                    widths={[400, 640, 900]}
+                    sizes="(min-width: 900px) 30vw, 100vw"
+                  />
+                  <span class="award">{p.award}</span>
+                </div>
+                <div class="winner-body">
+                  <span class="winner-cat">{CATEGORIES[p.entry.data.category].shortName}</span>
+                  <h3 class="display">{p.entry.data.productName}</h3>
+                  <p>{p.blurb}</p>
+                  <p class="winner-foot">
+                    <span class="winner-score">{p.entry.data.rating.toFixed(1)}/10</span>
+                    <span>{formatPrice(p.entry.data.price)}</span>
+                  </p>
+                </div>
+              </a>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    <!-- Comparison -->
+    <section class="compare section" aria-labelledby="compare-title">
+      <div class="section-head">
+        <div>
+          <p class="kicker">Side by side</p>
+          <h2 id="compare-title" class="display">Compare the picks</h2>
+        </div>
+      </div>
+      <div class="table-scroll" role="region" aria-labelledby="compare-title" tabindex="0">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Product</th>
+              <th scope="col">Award</th>
+              <th scope="col">Score</th>
+              <th scope="col">Price</th>
+              {data.comparisonFields.map((f) => <th scope="col">{f}</th>)}
+              <th scope="col"><span class="sr-only">Buy</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              picks.map((p) => {
+                const best = p.entry.data.affiliateLinks[0];
+                return (
+                  <tr>
+                    <th scope="row">
+                      <a href={reviewUrl(p.entry.id)}>{p.entry.data.productName}</a>
+                    </th>
+                    <td class="t-award">{p.award}</td>
+                    <td class="t-score">{p.entry.data.rating.toFixed(1)}</td>
+                    <td class="t-price">{formatPrice(p.entry.data.price)}</td>
+                    {data.comparisonFields.map((f) => (
+                      <td>{specValue(p.entry, f) ?? '—'}</td>
+                    ))}
+                    <td>
+                      {best ? (
+                        <a
+                          href={best.url}
+                          rel="sponsored nofollow noopener"
+                          target="_blank"
+                          class="t-buy"
+                          aria-label={`Buy ${p.entry.data.productName} at ${best.retailer} (opens in a new tab)`}>
+                          Buy
+                        </a>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="t-note muted">
+        Prices at time of publishing. We may earn a commission from purchases — <a href="/disclosure/">disclosure</a>.
+      </p>
+    </section>
+
+    <!-- Detail sections -->
+    <div class="details">
+      {
+        picks.map((p, i) => (
+          <section class="detail" id={slugify(p.entry.id)} aria-labelledby={`d-${slugify(p.entry.id)}`}>
+            <div class="detail-media zoom grain" data-reveal>
+              <Image
+                src={p.entry.data.heroImage}
+                alt={p.entry.data.heroAlt}
+                widths={[480, 800, 1200]}
+                sizes="(min-width: 1000px) 45vw, 100vw"
+              />
+            </div>
+            <div class="detail-body">
+              <p class="kicker">
+                {String(i + 1).padStart(2, '0')} — {p.award}
+              </p>
+              <h2 id={`d-${slugify(p.entry.id)}`} class="display">
+                {p.entry.data.productName}
+              </h2>
+              <div class="detail-score">
+                <ScoreBadge rating={p.entry.data.rating} size="sm" />
+                <p>{p.entry.data.bestFor ?? CATEGORIES[p.entry.data.category].name}</p>
+              </div>
+              <p class="detail-verdict">{p.entry.data.verdict}</p>
+              <div class="detail-pc">
+                <div>
+                  <h3>Pros</h3>
+                  <ul>{p.entry.data.pros.slice(0, 3).map((x) => <li>{x}</li>)}</ul>
+                </div>
+                <div>
+                  <h3>Cons</h3>
+                  <ul>{p.entry.data.cons.slice(0, 2).map((x) => <li>{x}</li>)}</ul>
+                </div>
+              </div>
+              <BuyButtons links={p.entry.data.affiliateLinks.slice(0, 2)} productName={p.entry.data.productName} disclosure={false} />
+              <a href={reviewUrl(p.entry.id)} class="detail-more">
+                Read the full review <span aria-hidden="true">→</span>
+              </a>
+            </div>
+          </section>
+        ))
+      }
+    </div>
+
+    <div class="prose roundup-body">
+      <Content />
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgb(255 255 255 / 0.8);
+  }
+  .on-dark {
+    color: rgb(255 255 255 / 0.8);
+    border-color: rgb(255 255 255 / 0.4);
+  }
+  .intro {
+    max-width: 52rem;
+    padding-block: var(--space-2xl) var(--space-xl);
+    font-family: var(--font-serif);
+    font-size: clamp(1.25rem, 1.05rem + 0.9vw, 1.9rem);
+    line-height: 1.45;
+    color: var(--ink);
+  }
+  .winners {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: clamp(1.25rem, 3vw, 2.5rem);
+  }
+  .winner-link {
+    display: block;
+    height: 100%;
+    text-decoration: none;
+    background: var(--bg-elev);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .winner-link:hover {
+    border-color: var(--accent);
+  }
+  .winner-media {
+    position: relative;
+    aspect-ratio: 4 / 3;
+  }
+  .winner-media :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .award {
+    position: absolute;
+    z-index: 3;
+    left: 0;
+    top: 1rem;
+    padding: 0.4rem 0.8rem;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  .winner-body {
+    padding: 1.25rem;
+  }
+  .winner-cat {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .winner-body h3 {
+    margin-block: 0.4rem 0.6rem;
+    font-size: clamp(1.6rem, 1.3rem + 1vw, 2.2rem);
+  }
+  .winner-body p {
+    font-size: 0.93rem;
+    color: var(--ink-soft);
+  }
+  .winner-foot {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--rule);
+    font-weight: 700;
+  }
+  .winner-score {
+    color: var(--accent-ink);
+  }
+
+  .table-scroll {
+    position: relative;
+    overflow-x: auto;
+    border-top: 2px solid var(--ink);
+  }
+  .table-scroll:focus-visible {
+    outline-offset: 4px;
+  }
+  table {
+    width: 100%;
+    min-width: 760px;
+    font-size: 0.92rem;
+  }
+  thead th {
+    text-align: left;
+    padding: 0.9rem 1rem 0.9rem 0;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    border-bottom: 1px solid var(--rule-strong);
+    white-space: nowrap;
+  }
+  tbody th,
+  tbody td {
+    text-align: left;
+    padding: 1.1rem 1rem 1.1rem 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: middle;
+  }
+  tbody th a {
+    font-weight: 750;
+    text-decoration: none;
+  }
+  tbody th a:hover {
+    color: var(--accent-ink);
+  }
+  .t-award {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+  }
+  .t-score,
+  .t-price {
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    white-space: nowrap;
+  }
+  .t-buy {
+    display: inline-flex;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius);
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-weight: 800;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+  .t-note {
+    margin-top: 0.85rem;
+    font-size: 0.8rem;
+  }
+
+  .details {
+    display: grid;
+    gap: var(--space-3xl);
+    padding-block: var(--space-xl) var(--space-2xl);
+  }
+  .detail {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(1.5rem, 5vw, 5rem);
+    align-items: center;
+    scroll-margin-top: calc(var(--header-h) + 1rem);
+  }
+  .detail:nth-child(even) .detail-media {
+    order: 2;
+  }
+  .detail-media {
+    aspect-ratio: 4 / 3;
+    border-radius: var(--radius);
+  }
+  .detail-media :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .detail-body > * + * {
+    margin-top: 1.1rem;
+  }
+  .detail-body h2 {
+    font-size: var(--step-4);
+  }
+  .detail-score {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    font-weight: 650;
+    color: var(--ink-soft);
+  }
+  .detail-verdict {
+    font-family: var(--font-serif);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+  }
+  .detail-pc {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    padding-block: 1rem;
+    border-block: 1px solid var(--rule);
+  }
+  .detail-pc h3 {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .detail-pc div:first-child h3 {
+    color: var(--accent-ink);
+  }
+  .detail-pc ul {
+    list-style: none;
+    margin-top: 0.5rem;
+    display: grid;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+  }
+  .detail-more {
+    display: inline-block;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+  }
+  .detail-more span {
+    color: var(--accent);
+  }
+  .roundup-body {
+    margin-inline: auto;
+  }
+  @media (max-width: 900px) {
+    .detail {
+      grid-template-columns: 1fr;
+    }
+    .detail:nth-child(even) .detail-media {
+      order: 0;
+    }
+  }
+  @media (max-width: 480px) {
+    .detail-pc {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

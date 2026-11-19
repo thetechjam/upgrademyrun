@@ -1,0 +1,140 @@
+---
+import { Image } from 'astro:assets';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import flatlay from '../../assets/images/gear-flatlay.webp';
+import { formatDate, getRoundups, roundupUrl } from '../../lib/content';
+import { breadcrumbJsonLd, itemListJsonLd } from '../../lib/jsonld';
+
+const roundups = await getRoundups();
+const crumbs = [
+  { name: 'Home', url: '/' },
+  { name: 'Best Of', url: '/best/' },
+];
+---
+
+<BaseLayout
+  title="Best Running Gear: Buying Guides"
+  description="Our best-of buying guides: the running shoes, GPS watches, headphones and kit that won our testing, compared side by side."
+  image={flatlay}
+  jsonLd={[
+    breadcrumbJsonLd(crumbs),
+    itemListJsonLd({
+      name: 'Best-of running gear guides',
+      url: '/best/',
+      items: roundups.map((r) => ({ name: r.data.title, url: roundupUrl(r.id) })),
+    }),
+  ]}
+>
+  <PageHero
+    title="Best of"
+    kicker="Buying guides"
+    lede="The winners of our testing, ranked and compared — so you can skip the research and get back to running."
+    crumbs={crumbs}
+  />
+
+  <section class="section container" aria-label="Guides">
+    <ul class="list" role="list">
+      {
+        roundups.map((r, i) => (
+          <li data-reveal>
+            <a href={roundupUrl(r.id)} class="item">
+              <div class="item-media zoom grain">
+                <Image
+                  src={r.data.heroImage}
+                  alt={r.data.heroAlt}
+                  widths={[640, 960, 1440, 1920]}
+                  sizes="(min-width: 1000px) 60vw, 100vw"
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                />
+              </div>
+              <div class="item-body">
+                <p class="kicker">
+                  {r.data.picks.length} picks · {formatDate(r.data.updated ?? r.data.date)}
+                </p>
+                <h2 class="display">{r.data.title}</h2>
+                <p class="item-desc">{r.data.description}</p>
+                <ol class="item-awards">
+                  {r.data.picks.map((p) => (
+                    <li>{p.award}</li>
+                  ))}
+                </ol>
+                <span class="item-cta">
+                  Read the guide <span aria-hidden="true">→</span>
+                </span>
+              </div>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+    {roundups.length === 0 && <p class="muted">Guides coming soon.</p>}
+  </section>
+</BaseLayout>
+
+<style>
+  .list {
+    list-style: none;
+    display: grid;
+    gap: var(--space-2xl);
+  }
+  .item {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: clamp(1.5rem, 4vw, 4rem);
+    align-items: center;
+    text-decoration: none;
+  }
+  .item-media {
+    aspect-ratio: 16 / 10;
+    border-radius: var(--radius);
+  }
+  .item-media :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .item-body h2 {
+    margin-block: 0.75rem 1rem;
+    font-size: var(--step-4);
+    transition: color 0.2s;
+  }
+  .item:hover h2 {
+    color: var(--accent-ink);
+  }
+  .item-desc {
+    color: var(--ink-soft);
+  }
+  .item-awards {
+    list-style: none;
+    margin-top: 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .item-awards li {
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--rule-strong);
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .item-cta {
+    display: inline-block;
+    margin-top: 1.5rem;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .item-cta span {
+    color: var(--accent);
+  }
+  @media (max-width: 900px) {
+    .item {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

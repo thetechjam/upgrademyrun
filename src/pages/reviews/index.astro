@@ -1,0 +1,131 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import ReviewCard from '../../components/ReviewCard.astro';
+import { CATEGORY_LIST } from '../../data/categories';
+import { getReviews } from '../../lib/content';
+import { breadcrumbJsonLd } from '../../lib/jsonld';
+
+const reviews = await getReviews();
+const crumbs = [
+  { name: 'Home', url: '/' },
+  { name: 'Reviews', url: '/reviews/' },
+];
+---
+
+<BaseLayout
+  title="All Running Gear Reviews"
+  description="Every Upgrade My Run review in one place — running shoes, GPS watches, headphones and apparel, scored out of 10 after real miles."
+  jsonLd={[breadcrumbJsonLd(crumbs)]}
+>
+  <PageHero
+    title="The reviews"
+    kicker={`${reviews.length} verdict${reviews.length === 1 ? '' : 's'} and counting`}
+    lede="Every product here has been run, measured and scored. Filter by category, or dive straight in."
+    crumbs={crumbs}
+  />
+
+  <div class="container section">
+    <nav class="chips" aria-label="Filter reviews by category" data-filter>
+      <a href="/reviews/" class="chip" aria-current="page" data-filter-value="all">All</a>
+      {
+        CATEGORY_LIST.map((c) => (
+          <a href={`/${c.slug}/`} class="chip" data-filter-value={c.slug}>
+            {c.name}
+          </a>
+        ))
+      }
+    </nav>
+
+    <div class="grid" data-filter-grid>
+      {
+        reviews.map((r, i) => (
+          <div class="cell" data-category={r.data.category}>
+            <ReviewCard review={r} eager={i < 3} />
+          </div>
+        ))
+      }
+    </div>
+    <p class="empty" data-filter-empty hidden>
+      No reviews in this category yet — check back soon.
+    </p>
+  </div>
+</BaseLayout>
+
+<script>
+  // Progressive enhancement: filter in place. Without JS, chips link to category pages.
+  const nav = document.querySelector<HTMLElement>('[data-filter]');
+  const cells = document.querySelectorAll<HTMLElement>('[data-filter-grid] [data-category]');
+  const empty = document.querySelector<HTMLElement>('[data-filter-empty]');
+  if (nav) {
+    const chips = nav.querySelectorAll<HTMLAnchorElement>('[data-filter-value]');
+    const apply = (value: string) => {
+      let shown = 0;
+      cells.forEach((cell) => {
+        const match = value === 'all' || cell.dataset.category === value;
+        cell.hidden = !match;
+        if (match) {
+          shown++;
+          cell.querySelector('[data-reveal]')?.classList.add('is-visible');
+        }
+      });
+      chips.forEach((chip) => {
+        if (chip.dataset.filterValue === value) chip.setAttribute('aria-current', 'true');
+        else chip.removeAttribute('aria-current');
+      });
+      if (empty) empty.hidden = shown > 0;
+    };
+    chips.forEach((chip) =>
+      chip.addEventListener('click', (e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+        e.preventDefault();
+        apply(chip.dataset.filterValue ?? 'all');
+      }),
+    );
+  }
+</script>
+
+<style>
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: var(--space-xl);
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0.4rem 1rem;
+    border: 1px solid var(--rule-strong);
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition:
+      border-color 0.2s,
+      background-color 0.2s;
+  }
+  .chip:hover {
+    border-color: var(--accent);
+  }
+  .chip[aria-current] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-contrast);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+    gap: var(--space-2xl) clamp(1.25rem, 3vw, 2.5rem);
+  }
+  .cell[hidden] {
+    display: none;
+  }
+  .empty {
+    padding: var(--space-xl) 0;
+    color: var(--ink-mute);
+  }
+</style>

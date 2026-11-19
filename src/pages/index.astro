@@ -1,0 +1,492 @@
+---
+import { Image } from 'astro:assets';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ArtDirectedPicture from '../components/ArtDirectedPicture.astro';
+import ReviewCard from '../components/ReviewCard.astro';
+import CategoryBand from '../components/CategoryBand.astro';
+import Newsletter from '../components/Newsletter.astro';
+import HowWeTest from '../components/HowWeTest.astro';
+import heroDesktop from '../assets/images/hero.webp';
+import heroMobile from '../assets/images/hero-mobile.webp';
+import { CATEGORY_SLUGS, type CategorySlug } from '../data/categories';
+import { getReviews, getRoundups, roundupUrl } from '../lib/content';
+import { organizationJsonLd, websiteJsonLd } from '../lib/jsonld';
+import { getEntries } from 'astro:content';
+
+const reviews = await getReviews();
+const featured = reviews.filter((r) => r.data.featured);
+const [lead, ...restFeatured] = featured.length ? featured : reviews;
+const sideFeatured = restFeatured.slice(0, 2);
+const latest = reviews.slice(0, 6);
+
+const counts = Object.fromEntries(
+  CATEGORY_SLUGS.map((s) => [s, reviews.filter((r) => r.data.category === s).length]),
+) as Record<CategorySlug, number>;
+
+const roundups = await getRoundups();
+const roundup = roundups.find((r) => r.data.featured) ?? roundups[0];
+const roundupPicks = roundup ? await getEntries(roundup.data.picks.map((p) => p.review)) : [];
+---
+
+<BaseLayout jsonLd={[organizationJsonLd(), websiteJsonLd()]}>
+  <!-- HERO -->
+  <section class="hero grain" aria-labelledby="hero-title">
+    <div class="hero-media">
+      <ArtDirectedPicture
+        desktop={heroDesktop}
+        mobile={heroMobile}
+        alt="A runner in black kit strides across a rain-slicked overpass as the sun rises orange behind a city skyline"
+        class="hero-picture"
+      />
+    </div>
+    <div class="hero-shade" aria-hidden="true"></div>
+    <div class="container hero-inner">
+      <p class="kicker hero-kicker">Running gear, tested at first light</p>
+      <h1 id="hero-title" class="display hero-title">
+        <span class="line">Gear that</span>
+        <span class="line"><em>earns</em> its</span>
+        <span class="line">miles.</span>
+      </h1>
+      <p class="hero-sub">
+        Honest, independent reviews of the shoes, watches, headphones and kit that make the early miles better — and
+        the verdicts to help you buy once, and buy right.
+      </p>
+      <div class="hero-ctas">
+        <a href="/reviews/" class="btn btn--primary">Read the reviews</a>
+        <a href="/best/" class="btn btn--on-image">Best-of guides</a>
+      </div>
+    </div>
+    <div class="hero-foot container" aria-hidden="true">
+      <span>Issue 01</span>
+      <span class="hero-foot-rule"></span>
+      <span>Shoes · Watches · Audio · Apparel</span>
+    </div>
+  </section>
+
+  <!-- FEATURED -->
+  {
+    lead && (
+      <section class="section container" aria-labelledby="featured-title">
+        <div class="section-head">
+          <div>
+            <p class="kicker">Featured</p>
+            <h2 id="featured-title" class="display">
+              The verdicts
+            </h2>
+          </div>
+          <a href="/reviews/" class="more">
+            All reviews <span aria-hidden="true">→</span>
+          </a>
+        </div>
+        <div class="feature-grid">
+          <div class="fg-lead">
+            <ReviewCard review={lead} variant="feature" headingLevel="h3" sizes="(min-width: 1000px) 58vw, 100vw" />
+          </div>
+          <div class="fg-side">
+            {sideFeatured.map((r) => (
+              <ReviewCard review={r} variant="card" sizes="(min-width: 1000px) 34vw, 100vw" />
+            ))}
+            <aside class="fg-note" data-reveal>
+              <p class="fg-note-label">Our promise</p>
+              <p class="fg-note-quote">
+                “Every score is earned on real roads. No brand pays for placement, and no product sees a rating it
+                hasn’t run for.”
+              </p>
+              <a href="/about/">How we test →</a>
+            </aside>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <!-- CATEGORIES -->
+  <section class="section section--band" aria-labelledby="cats-title">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <p class="kicker">Shop by category</p>
+          <h2 id="cats-title" class="display">Find your upgrade</h2>
+        </div>
+        <p class="band-lede muted">Four ways to run better tomorrow morning.</p>
+      </div>
+      <CategoryBand counts={counts} />
+    </div>
+  </section>
+
+  <!-- LATEST + ROUNDUP -->
+  <section class="section container latest-wrap" aria-labelledby="latest-title">
+    <div class="latest">
+      <div class="section-head">
+        <div>
+          <p class="kicker">Fresh off the road</p>
+          <h2 id="latest-title" class="display">Latest reviews</h2>
+        </div>
+      </div>
+      <div class="latest-list">
+        {latest.map((r, i) => <ReviewCard review={r} variant="row" index={i} />)}
+      </div>
+    </div>
+
+    {
+      roundup && (
+        <aside class="roundup-teaser" aria-labelledby="roundup-title" data-reveal>
+          <a href={roundupUrl(roundup.id)} class="rt-link">
+            <div class="rt-media zoom grain">
+              <Image
+                src={roundup.data.heroImage}
+                alt={roundup.data.heroAlt}
+                widths={[480, 720, 960, 1200]}
+                sizes="(min-width: 1000px) 38vw, 100vw"
+              />
+            </div>
+            <div class="rt-body">
+              <p class="kicker">Best of</p>
+              <h2 id="roundup-title" class="display rt-title">
+                {roundup.data.title}
+              </h2>
+              <ol class="rt-picks">
+                {roundup.data.picks.map((p, i) => (
+                  <li>
+                    <span class="rt-award">{p.award}</span>
+                    <span class="rt-name">{roundupPicks[i]?.data.productName}</span>
+                  </li>
+                ))}
+              </ol>
+              <span class="rt-cta">
+                Read the guide <span aria-hidden="true">→</span>
+              </span>
+            </div>
+          </a>
+        </aside>
+      )
+    }
+  </section>
+
+  <!-- HOW WE TEST -->
+  <HowWeTest />
+
+  <!-- NEWSLETTER -->
+  <section class="section container nl-wrap" data-reveal>
+    <Newsletter variant="band" />
+  </section>
+</BaseLayout>
+
+<style>
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative;
+    min-height: min(calc(100svh - var(--header-h)), 900px);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    color: #fff;
+    overflow: hidden;
+    background: var(--navy-950);
+  }
+  .hero-media {
+    position: absolute;
+    inset: 0;
+  }
+  .hero-media :global(.hero-picture),
+  .hero-media :global(img) {
+    width: 100%;
+    height: 100%;
+  }
+  .hero-media :global(img) {
+    object-fit: cover;
+    object-position: 70% 50%;
+  }
+  .hero-shade {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background:
+      linear-gradient(90deg, rgb(7 12 22 / 0.85) 0%, rgb(7 12 22 / 0.55) 35%, rgb(7 12 22 / 0) 62%),
+      linear-gradient(0deg, rgb(7 12 22 / 0.7) 0%, rgb(7 12 22 / 0) 30%);
+  }
+  .hero-inner {
+    position: relative;
+    z-index: 3;
+    padding-block: var(--space-2xl) var(--space-xl);
+  }
+  .hero-kicker {
+    color: #ff7a47;
+  }
+  .hero-title {
+    margin-top: 1.25rem;
+    font-size: clamp(3.4rem, 1.6rem + 7.4vw, 9.5rem);
+    line-height: 0.88;
+    letter-spacing: 0.005em;
+  }
+  .hero-title .line {
+    display: block;
+  }
+  .hero-title em {
+    font-style: normal;
+    color: var(--orange-500);
+  }
+  .hero-sub {
+    margin-top: 1.5rem;
+    max-width: 34rem;
+    font-size: clamp(1.02rem, 0.95rem + 0.35vw, 1.2rem);
+    color: rgb(255 255 255 / 0.86);
+  }
+  .hero-ctas {
+    margin-top: 2rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .hero-foot {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 1.5rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgb(255 255 255 / 0.7);
+  }
+  .hero-foot-rule {
+    flex: 1;
+    height: 1px;
+    background: rgb(255 255 255 / 0.25);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-media :global(img) {
+      animation: hero-settle 2.4s var(--ease-out) both;
+    }
+    .hero-inner > * {
+      animation: hero-rise 1.1s var(--ease-out) both;
+    }
+    .hero-inner > :nth-child(2) {
+      animation-delay: 0.08s;
+    }
+    .hero-inner > :nth-child(3) {
+      animation-delay: 0.18s;
+    }
+    .hero-inner > :nth-child(4) {
+      animation-delay: 0.26s;
+    }
+    /* Slight parallax drift as the hero scrolls away (progressive enhancement) */
+    @supports (animation-timeline: scroll()) {
+      .hero-media {
+        animation: hero-parallax linear both;
+        animation-timeline: scroll(root);
+        animation-range: 0 100vh;
+      }
+    }
+  }
+  @keyframes hero-settle {
+    from {
+      transform: scale(1.08);
+    }
+    to {
+      transform: scale(1);
+    }
+  }
+  @keyframes hero-rise {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+  }
+  @keyframes hero-parallax {
+    to {
+      transform: translateY(18%) scale(1.06);
+    }
+  }
+
+  @media (max-width: 759px) {
+    /* Mobile art direction: runner framed in the upper/middle of the 4:5 crop,
+       copy sits on a deep navy fade over the road at the bottom. */
+    .hero {
+      min-height: calc(100svh - var(--header-h));
+    }
+    .hero-media :global(img) {
+      object-position: 50% 0%;
+    }
+    .hero-shade {
+      background:
+        linear-gradient(0deg, rgb(7 12 22 / 0.98) 0%, rgb(7 12 22 / 0.9) 30%, rgb(7 12 22 / 0.35) 52%, rgb(7 12 22 / 0) 66%),
+        linear-gradient(180deg, rgb(7 12 22 / 0.35) 0%, rgb(7 12 22 / 0) 15%);
+    }
+    .hero-inner {
+      padding-block: 2rem 1.25rem;
+    }
+    .hero-title {
+      font-size: clamp(3rem, 15vw, 4.4rem);
+    }
+    .hero-sub {
+      font-size: 0.98rem;
+      margin-top: 1rem;
+    }
+    .hero-ctas {
+      margin-top: 1.5rem;
+    }
+    .hero-ctas .btn {
+      flex: 1 1 auto;
+    }
+    .hero-foot {
+      display: none;
+    }
+  }
+
+  /* ---------- Featured grid (asymmetric) ---------- */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--space-xl) clamp(1.25rem, 3vw, 3rem);
+    align-items: start;
+  }
+  .fg-lead {
+    grid-column: 1 / span 7;
+    position: sticky;
+    top: calc(var(--header-h) + 1.5rem);
+  }
+  .fg-side {
+    grid-column: 8 / span 5;
+    display: grid;
+    gap: var(--space-xl);
+    padding-top: clamp(0rem, 6vw, 5rem);
+  }
+  .fg-note {
+    border-top: 3px solid var(--accent);
+    padding-top: 1.25rem;
+  }
+  .fg-note-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .fg-note-quote {
+    margin-top: 0.75rem;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.6rem);
+    line-height: 1.35;
+    color: var(--ink);
+  }
+  .fg-note a {
+    display: inline-block;
+    margin-top: 1rem;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--accent-ink);
+    text-decoration: none;
+  }
+  @media (max-width: 999px) {
+    .fg-lead,
+    .fg-side {
+      grid-column: 1 / -1;
+      position: static;
+      padding-top: 0;
+    }
+  }
+
+  /* ---------- Category band ---------- */
+  .section--band {
+    background: var(--bg-elev);
+    border-block: 1px solid var(--rule);
+  }
+  .band-lede {
+    max-width: 22rem;
+  }
+
+  /* ---------- Latest + roundup ---------- */
+  .latest-wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: clamp(2rem, 5vw, 5rem);
+    align-items: start;
+  }
+  .latest-list {
+    margin-top: -1.25rem;
+  }
+  .roundup-teaser {
+    position: sticky;
+    top: calc(var(--header-h) + 1.5rem);
+  }
+  .rt-link {
+    display: block;
+    text-decoration: none;
+    color: #fff;
+    background: var(--navy-900);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .rt-media {
+    aspect-ratio: 16 / 10;
+  }
+  .rt-media :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .rt-body {
+    padding: clamp(1.25rem, 3vw, 2rem);
+  }
+  .rt-body .kicker {
+    color: #ff7a47;
+  }
+  .rt-title {
+    margin-top: 0.75rem;
+    font-size: var(--step-3);
+  }
+  .rt-picks {
+    list-style: none;
+    margin-top: 1.25rem;
+    border-top: 1px solid rgb(255 255 255 / 0.15);
+  }
+  .rt-picks li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 0.7rem;
+    border-bottom: 1px solid rgb(255 255 255 / 0.15);
+    font-size: 0.9rem;
+  }
+  .rt-award {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #ff7a47;
+    padding-top: 0.15rem;
+  }
+  .rt-name {
+    text-align: right;
+    font-weight: 600;
+  }
+  .rt-cta {
+    display: inline-block;
+    margin-top: 1.25rem;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .rt-cta span {
+    color: #ff7a47;
+  }
+  @media (max-width: 999px) {
+    .latest-wrap {
+      grid-template-columns: 1fr;
+    }
+    .roundup-teaser {
+      position: static;
+    }
+  }
+
+  .nl-wrap {
+    padding-top: var(--space-xl);
+  }
+</style>

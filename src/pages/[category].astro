@@ -1,0 +1,244 @@
+---
+import type { GetStaticPaths } from 'astro';
+import { Image } from 'astro:assets';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import ReviewCard from '../components/ReviewCard.astro';
+import { CATEGORY_LIST, CATEGORIES, type Category } from '../data/categories';
+import { getReviews, getRoundups, roundupUrl } from '../lib/content';
+import { breadcrumbJsonLd, itemListJsonLd } from '../lib/jsonld';
+
+export const getStaticPaths = (() =>
+  CATEGORY_LIST.map((category) => ({ params: { category: category.slug }, props: { category } }))) satisfies GetStaticPaths;
+
+interface Props {
+  category: Category;
+}
+const { category } = Astro.props;
+const reviews = await getReviews(category.slug);
+const reviewIds = new Set(reviews.map((r) => r.id));
+const roundups = (await getRoundups()).filter(
+  (r) => r.data.category === category.slug || r.data.picks.some((p) => reviewIds.has(p.review.id)),
+);
+const others = CATEGORY_LIST.filter((c) => c.slug !== category.slug);
+const url = `/${category.slug}/`;
+const crumbs = [
+  { name: 'Home', url: '/' },
+  { name: category.name, url },
+];
+const jsonLd = [breadcrumbJsonLd(crumbs)];
+if (reviews.length) {
+  jsonLd.push(
+    itemListJsonLd({
+      name: `${category.name} reviews`,
+      url,
+      items: reviews.map((r) => ({ name: r.data.title, url: `/reviews/${r.id}/` })),
+    }),
+  );
+}
+---
+
+<BaseLayout
+  title={`${category.name} Reviews`}
+  description={category.description}
+  image={category.banner}
+  imageAlt={category.bannerAlt}
+  jsonLd={jsonLd}
+>
+  <PageHero
+    title={category.name}
+    kicker={category.tagline}
+    lede={category.description}
+    image={category.banner}
+    imageAlt={category.bannerAlt}
+    crumbs={crumbs}
+  />
+
+  <section class="section container" aria-labelledby="list-title">
+    <div class="section-head">
+      <div>
+        <p class="kicker">{reviews.length ? `${reviews.length} tested` : 'In the lab'}</p>
+        <h2 id="list-title" class="display">{category.shortName} reviews</h2>
+      </div>
+      <a href="/reviews/" class="more">All reviews <span aria-hidden="true">→</span></a>
+    </div>
+
+    {
+      reviews.length ? (
+        <div class="grid">
+          {reviews.map((r, i) => (
+            <ReviewCard review={r} variant={i === 0 && reviews.length > 2 ? 'feature' : 'card'} eager={i === 0} />
+          ))}
+        </div>
+      ) : (
+        <div class="empty">
+          <p class="empty-big display" aria-hidden="true">
+            Soon.
+          </p>
+          <div class="empty-copy">
+            <h3>Reviews coming soon</h3>
+            <p>
+              Our {category.name.toLowerCase()} testers are out logging miles right now. The first verdicts land here
+              once they’ve been through enough dark mornings and wet roads to earn a score.
+            </p>
+            <a href="/reviews/" class="btn btn--ghost">
+              Browse all reviews
+            </a>
+          </div>
+        </div>
+      )
+    }
+  </section>
+
+  {
+    roundups.length > 0 && (
+      <section class="section container" aria-labelledby="ru-title">
+        <div class="section-head">
+          <div>
+            <p class="kicker">Buying guides</p>
+            <h2 id="ru-title" class="display">
+              Related best-of guides
+            </h2>
+          </div>
+        </div>
+        <ul class="ru-list" role="list">
+          {roundups.map((r) => (
+            <li data-reveal>
+              <a href={roundupUrl(r.id)} class="ru">
+                <div class="ru-media zoom">
+                  <Image src={r.data.heroImage} alt="" widths={[400, 640, 800]} sizes="(min-width: 760px) 320px, 100vw" />
+                </div>
+                <div class="ru-body">
+                  <p class="kicker kicker--plain">{r.data.picks.length} picks</p>
+                  <h3 class="display">{r.data.title}</h3>
+                  <p class="muted">{r.data.description}</p>
+                </div>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  <nav class="container other" aria-label="Other categories">
+    <p class="kicker">Keep exploring</p>
+    <ul role="list">
+      {
+        others.map((c) => (
+          <li>
+            <a href={`/${c.slug}/`} class="display">
+              {CATEGORIES[c.slug].shortName}
+              <span aria-hidden="true">→</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+</BaseLayout>
+
+<style>
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+    gap: var(--space-2xl) clamp(1.25rem, 3vw, 2.5rem);
+  }
+  .grid > :global(.rc--feature) {
+    grid-column: 1 / -1;
+  }
+  .empty {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: clamp(1.5rem, 5vw, 5rem);
+    align-items: center;
+    padding: clamp(2rem, 5vw, 4rem);
+    border: 1px dashed var(--rule-strong);
+    border-radius: var(--radius-l);
+  }
+  .empty-big {
+    font-size: clamp(5rem, 3rem + 10vw, 12rem);
+    color: transparent;
+    -webkit-text-stroke: 2px var(--accent);
+    line-height: 0.85;
+  }
+  .empty-copy h3 {
+    font-size: 1.4rem;
+    font-weight: 750;
+  }
+  .empty-copy p {
+    margin-block: 0.75rem 1.5rem;
+    color: var(--ink-soft);
+    max-width: 34rem;
+  }
+  @media (max-width: 700px) {
+    .empty {
+      grid-template-columns: 1fr;
+    }
+  }
+  .ru-list {
+    list-style: none;
+    display: grid;
+    gap: 1.5rem;
+  }
+  .ru {
+    display: grid;
+    grid-template-columns: minmax(0, 320px) 1fr;
+    gap: clamp(1rem, 3vw, 2.5rem);
+    align-items: center;
+    text-decoration: none;
+  }
+  .ru-media {
+    aspect-ratio: 16 / 10;
+    border-radius: var(--radius);
+  }
+  .ru-media :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .ru-body h3 {
+    margin-block: 0.5rem;
+    font-size: var(--step-3);
+  }
+  .ru:hover h3 {
+    color: var(--accent-ink);
+  }
+  @media (max-width: 700px) {
+    .ru {
+      grid-template-columns: 1fr;
+    }
+  }
+  .other {
+    padding-top: var(--space-xl);
+  }
+  .other ul {
+    list-style: none;
+    margin-top: 1rem;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid var(--rule);
+  }
+  .other a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1rem 1.25rem 0;
+    font-size: clamp(1.8rem, 1rem + 3vw, 3.5rem);
+    text-decoration: none;
+    border-bottom: 1px solid var(--rule);
+  }
+  .other a span {
+    color: var(--accent);
+    font-size: 0.6em;
+    transition: transform 0.3s var(--ease-out);
+  }
+  .other a:hover span {
+    transform: translateX(6px);
+  }
+  @media (max-width: 700px) {
+    .other ul {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
