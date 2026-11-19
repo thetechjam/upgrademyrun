@@ -133,21 +133,25 @@ const defaultSizes =
     padding-top: 0.25rem;
   }
 
-  /* Feature: image with text overlay */
+  /* Feature: big product image that fades into a navy panel carrying the copy.
+     Copy never sits on top of the product itself. */
   .rc--feature .rc-link {
     position: relative;
+    background: var(--navy-950);
+    border-radius: var(--radius);
+    overflow: hidden;
+    color: #fff;
   }
   .rc--feature .rc-media {
-    aspect-ratio: auto;
-    height: 100%;
-    min-height: clamp(420px, 52vw, 640px);
+    aspect-ratio: 4 / 3;
+    border-radius: 0;
   }
   .rc--feature .rc-media::before {
     content: '';
     position: absolute;
     inset: 0;
     z-index: 1;
-    background: linear-gradient(180deg, rgb(7 12 22 / 0) 30%, rgb(7 12 22 / 0.55) 55%, rgb(7 12 22 / 0.95) 100%);
+    background: linear-gradient(180deg, rgb(7 12 22 / 0) 62%, rgb(7 12 22 / 0.7) 86%, var(--navy-950) 100%);
   }
   .rc--feature .rc-media :global(.rc-score) {
     top: 1.25rem;
@@ -155,18 +159,17 @@ const defaultSizes =
     bottom: auto;
   }
   .rc--feature .rc-body {
-    position: absolute;
+    position: relative;
     z-index: 3;
-    inset: auto 0 0 0;
-    padding: clamp(1.25rem, 3vw, 2.5rem);
-    color: #fff;
+    margin-top: -1.5rem;
+    padding: 0 clamp(1.25rem, 3vw, 2.5rem) clamp(1.5rem, 3vw, 2.5rem);
   }
   .rc--feature .kicker {
     color: #ff7a47;
   }
   .rc--feature .rc-title {
-    font-size: clamp(2rem, 1.3rem + 2.6vw, 3.6rem);
-    max-width: 18ch;
+    font-size: clamp(2rem, 1.3rem + 2.4vw, 3.4rem);
+    max-width: 20ch;
   }
   .rc--feature .rc-link:hover .rc-title {
     color: #fff;
@@ -184,14 +187,13 @@ const defaultSizes =
     color: rgb(255 255 255 / 0.75);
     border-color: rgb(255 255 255 / 0.4);
   }
-
   @media (max-width: 600px) {
-    .rc--feature .rc-media {
-      min-height: 0;
-      aspect-ratio: 4 / 5;
+    .rc--feature .rc-body {
+      margin-top: -0.5rem;
     }
     .rc--feature .rc-desc {
-      display: none;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
     }
   }
 
@@ -212,6 +214,14 @@ const defaultSizes =
     font-weight: 750;
     line-height: 1.2;
     letter-spacing: -0.01em;
+  }
+  @media (max-width: 600px) {
+    .rc--row .rc-foot > span[aria-hidden='true'] {
+      display: none;
+    }
+    .rc--row .rc-foot time {
+      flex-basis: 100%;
+    }
   }
   .rc-rating {
     font-family: var(--font-display);

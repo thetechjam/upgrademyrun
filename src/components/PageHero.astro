@@ -120,6 +120,32 @@ const { title, kicker, lede, image, imageAlt = '', crumbs, size = 'medium' } = A
   .ph--type .ph-lede {
     color: var(--ink-soft);
   }
+  /* Mobile: image shown as a clear 4:3 photo that fades into navy; copy sits
+     below it (only overlapping the faded edge), never over the subject. */
+  @media (max-width: 700px) {
+    .ph--image,
+    .ph--tall {
+      display: block;
+      min-height: 0;
+    }
+    .ph--image::before {
+      display: none;
+    }
+    .ph-media {
+      position: relative;
+      aspect-ratio: 4 / 3;
+    }
+    .ph-media::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgb(7 12 22 / 0) 55%, rgb(7 12 22 / 0.8) 85%, var(--navy-950) 100%);
+    }
+    .ph--image .ph-inner {
+      margin-top: -2.5rem;
+      padding-top: 0;
+    }
+  }
   @media (prefers-reduced-motion: no-preference) {
     .ph-media :global(img) {
       animation: ph-settle 2.2s var(--ease-out) both;
@@ -130,6 +156,11 @@ const { title, kicker, lede, image, imageAlt = '', crumbs, size = 'medium' } = A
         animation-timeline: scroll(root);
         animation-range: 0 80vh;
       }
+    }
+  }
+  @media (max-width: 700px) {
+    .ph--image .ph-media {
+      animation: none !important;
     }
   }
   @keyframes ph-settle {

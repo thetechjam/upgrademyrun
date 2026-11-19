@@ -144,8 +144,23 @@ const H = headingLevel;
     .cats {
       grid-template-columns: 1fr;
     }
+    /* Taller crop + copy confined to a compact bottom band so the subject stays clear. */
     .cat-link {
-      aspect-ratio: 16 / 10;
+      aspect-ratio: 1 / 1;
+    }
+    .cat-media::before {
+      background: linear-gradient(180deg, rgb(7 12 22 / 0.2) 0%, rgb(7 12 22 / 0) 25%, rgb(7 12 22 / 0) 50%, rgb(7 12 22 / 0.94) 82%);
+    }
+    .cat-name {
+      font-size: 2.4rem;
+    }
+    .cat-tag {
+      margin-top: 0.25rem;
+      max-width: none;
+    }
+    .cat-count {
+      margin-top: 0.75rem;
+      padding-top: 0.6rem;
     }
   }
 </style>

@@ -303,37 +303,61 @@ const roundupPicks = roundup ? await getEntries(roundup.data.picks.map((p) => p.
   }
 
   @media (max-width: 759px) {
-    /* Mobile art direction: runner framed in the upper/middle of the 4:5 crop,
-       copy sits on a deep navy fade over the road at the bottom. */
+    /* Mobile art direction: the 4:5 portrait sits uncropped at the top of the
+       hero (face + upper body clear), fades into navy, and the copy is anchored
+       to the bottom on a bottom-up scrim — it never covers the runner's face. */
     .hero {
-      min-height: calc(100svh - var(--header-h));
+      min-height: max(640px, calc(100svh - var(--header-h)));
+      justify-content: flex-end;
+    }
+    .hero-media {
+      inset: 0 0 auto 0;
+      aspect-ratio: 4 / 5;
+    }
+    .hero-media::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgb(7 12 22 / 0) 55%, rgb(7 12 22 / 0.75) 85%, var(--navy-950) 100%);
     }
     .hero-media :global(img) {
-      object-position: 50% 0%;
+      object-position: 50% 20%;
     }
     .hero-shade {
-      background:
-        linear-gradient(0deg, rgb(7 12 22 / 0.98) 0%, rgb(7 12 22 / 0.9) 30%, rgb(7 12 22 / 0.35) 52%, rgb(7 12 22 / 0) 66%),
-        linear-gradient(180deg, rgb(7 12 22 / 0.35) 0%, rgb(7 12 22 / 0) 15%);
+      background: linear-gradient(0deg, rgb(7 12 22 / 0.96) 0%, rgb(7 12 22 / 0.85) 28%, rgb(7 12 22 / 0) 50%);
     }
     .hero-inner {
-      padding-block: 2rem 1.25rem;
+      padding-block: 1.5rem 1.75rem;
+    }
+    .hero-kicker {
+      font-size: 0.68rem;
     }
     .hero-title {
-      font-size: clamp(3rem, 15vw, 4.4rem);
+      margin-top: 0.75rem;
+      font-size: clamp(2.6rem, 13vw, 4rem);
     }
     .hero-sub {
-      font-size: 0.98rem;
-      margin-top: 1rem;
+      font-size: 0.95rem;
+      margin-top: 0.85rem;
+      line-height: 1.5;
     }
     .hero-ctas {
-      margin-top: 1.5rem;
+      margin-top: 1.25rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
     }
     .hero-ctas .btn {
-      flex: 1 1 auto;
+      padding-inline: 0.75rem;
+      font-size: 0.8rem;
     }
     .hero-foot {
       display: none;
+    }
+    @supports (animation-timeline: scroll()) {
+      .hero-media {
+        animation: none;
+      }
     }
   }
 
