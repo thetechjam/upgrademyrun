@@ -1,0 +1,128 @@
+---
+const steps = [
+  {
+    title: 'We buy it',
+    body: 'Products are bought at retail or loaned and returned. No brand reviews our copy or sees a score before you do.',
+  },
+  {
+    title: 'We run it',
+    body: 'Minimum 50 miles for shoes, four weeks for watches and audio — easy days, workouts, wet roads and dark mornings.',
+  },
+  {
+    title: 'We measure it',
+    body: 'Scales, calipers, GPS tracks against known courses, battery rundowns and side-by-side comparisons with our benchmarks.',
+  },
+  {
+    title: 'We score it',
+    body: 'A 0–10 score weighted for performance, comfort, durability and value — plus a plain-English verdict on who it’s for.',
+  },
+];
+---
+
+<section class="hwt" aria-labelledby="hwt-title">
+  <div class="container">
+    <div class="hwt-head">
+      <p class="kicker">How we test</p>
+      <h2 id="hwt-title" class="display">Miles before <span>verdicts.</span></h2>
+    </div>
+    <ol class="hwt-steps">
+      {
+        steps.map((s, i) => (
+          <li data-reveal style={`--reveal-delay:${i * 90}ms`}>
+            <span class="hwt-num" aria-hidden="true">
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <h3>{s.title}</h3>
+            <p>{s.body}</p>
+          </li>
+        ))
+      }
+    </ol>
+    <a href="/about/" class="hwt-more">Read our full testing process <span aria-hidden="true">→</span></a>
+  </div>
+</section>
+
+<style>
+  .hwt {
+    padding-block: var(--space-2xl);
+    background: var(--navy-950);
+    color: #eef1f6;
+    position: relative;
+    overflow: hidden;
+  }
+  .hwt::before {
+    content: '';
+    position: absolute;
+    right: -10%;
+    top: -40%;
+    width: 60%;
+    aspect-ratio: 1;
+    background: radial-gradient(circle, rgb(255 90 31 / 0.18), transparent 60%);
+    pointer-events: none;
+  }
+  .hwt .kicker {
+    color: #ff7a47;
+  }
+  .hwt-head h2 {
+    margin-top: 0.5rem;
+    font-size: var(--step-5);
+    line-height: 0.88;
+  }
+  .hwt-head h2 span {
+    color: var(--orange-500);
+  }
+  .hwt-steps {
+    list-style: none;
+    margin-top: var(--space-2xl);
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+  }
+  .hwt-steps li {
+    border-top: 1px solid rgb(255 255 255 / 0.2);
+    padding-top: 1.25rem;
+  }
+  .hwt-num {
+    display: block;
+    font-family: var(--font-display);
+    font-size: clamp(3rem, 2rem + 3vw, 5rem);
+    line-height: 1;
+    color: transparent;
+    -webkit-text-stroke: 1.5px rgb(255 255 255 / 0.55);
+  }
+  .hwt-steps h3 {
+    margin-top: 1rem;
+    font-size: 1.15rem;
+    font-weight: 750;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  .hwt-steps p {
+    margin-top: 0.6rem;
+    font-size: 0.95rem;
+    color: #a9b4c6;
+  }
+  .hwt-more {
+    display: inline-block;
+    margin-top: var(--space-xl);
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: #fff;
+  }
+  .hwt-more span {
+    color: #ff7a47;
+  }
+  @media (max-width: 900px) {
+    .hwt-steps {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  @media (max-width: 520px) {
+    .hwt-steps {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

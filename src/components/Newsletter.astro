@@ -1,0 +1,117 @@
+---
+interface Props {
+  variant?: 'band' | 'compact';
+}
+const { variant = 'band' } = Astro.props;
+const id = `nl-${variant}`;
+---
+
+<section class:list={['newsletter', `newsletter--${variant}`]} aria-labelledby={`${id}-title`}>
+  <div class="nl-copy">
+    {variant === 'band' && <p class="kicker">The Dawn Patrol</p>}
+    <h2 id={`${id}-title`} class:list={[variant === 'band' ? 'display' : 'nl-title-compact']}>
+      {variant === 'band' ? 'First light. First look.' : 'The Dawn Patrol newsletter'}
+    </h2>
+    <p class="nl-sub">
+      New reviews, honest verdicts and the occasional deal worth lacing up for — once a week, before your
+      first mile.
+    </p>
+  </div>
+  <form class="nl-form" action="#" method="get" aria-describedby={`${id}-note`}>
+    <fieldset disabled>
+      <legend class="sr-only">Newsletter sign-up (coming soon)</legend>
+      <label for={`${id}-email`} class="sr-only">Email address</label>
+      <input id={`${id}-email`} type="email" name="email" placeholder="you@example.com" autocomplete="email" />
+      <button type="submit" class="btn btn--primary">Notify me</button>
+    </fieldset>
+    <p id={`${id}-note`} class="nl-note">
+      <span class="dot" aria-hidden="true"></span> Coming soon — this form is a placeholder and doesn’t collect any
+      data yet.
+    </p>
+  </form>
+</section>
+
+<style>
+  .newsletter--band {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: var(--space-xl);
+    align-items: end;
+  }
+  .newsletter--band h2 {
+    font-size: var(--step-4);
+    margin-top: 0.5rem;
+  }
+  .nl-sub {
+    margin-top: 1rem;
+    color: var(--ink-soft);
+    max-width: 34rem;
+  }
+  .nl-title-compact {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  .newsletter--compact .nl-sub {
+    font-size: 0.9rem;
+    margin-top: 0.6rem;
+    color: var(--ink-mute);
+  }
+  .newsletter--compact .nl-form {
+    margin-top: 1rem;
+  }
+  fieldset {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 0.5rem;
+  }
+  input {
+    flex: 1;
+    min-width: 0;
+    min-height: 48px;
+    padding: 0 1rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--rule-strong);
+    background: var(--bg-sunk);
+  }
+  input::placeholder {
+    color: var(--ink-mute);
+  }
+  fieldset:disabled input,
+  fieldset:disabled button {
+    cursor: not-allowed;
+  }
+  fieldset:disabled button {
+    opacity: 0.85;
+    transform: none;
+  }
+  .nl-note {
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--ink-mute);
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+  }
+  .dot {
+    width: 7px;
+    height: 7px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--accent);
+    transform: translateY(-1px);
+  }
+  @media (max-width: 820px) {
+    .newsletter--band {
+      grid-template-columns: 1fr;
+    }
+  }
+  @media (max-width: 420px) {
+    fieldset {
+      flex-direction: column;
+    }
+  }
+</style>

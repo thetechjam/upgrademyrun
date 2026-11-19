@@ -1,0 +1,103 @@
+---
+import { formatRating } from '../lib/content';
+
+interface Props {
+  rating: number;
+  size?: 'sm' | 'md' | 'lg';
+  class?: string;
+}
+const { rating, size = 'md', class: className } = Astro.props;
+const r = 44;
+const c = 2 * Math.PI * r;
+const offset = c * (1 - rating / 10);
+---
+
+<div class:list={['score', `score--${size}`, className]} role="img" aria-label={`Rated ${formatRating(rating)} out of 10`}>
+  <svg viewBox="0 0 100 100" aria-hidden="true">
+    <circle class="track" cx="50" cy="50" r={r}></circle>
+    <circle
+      class="arc"
+      cx="50"
+      cy="50"
+      r={r}
+      stroke-dasharray={c.toFixed(2)}
+      stroke-dashoffset={offset.toFixed(2)}
+      style={`--c:${c.toFixed(2)}`}></circle>
+  </svg>
+  <span class="value" aria-hidden="true">
+    <span class="num">{formatRating(rating)}</span>
+    {size !== 'sm' && <span class="of">/10</span>}
+  </span>
+</div>
+
+<style>
+  .score {
+    --d: 84px;
+    position: relative;
+    width: var(--d);
+    height: var(--d);
+    flex: none;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--navy-900);
+    color: #fff;
+    box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.5);
+  }
+  .score--sm {
+    --d: 52px;
+  }
+  .score--lg {
+    --d: clamp(118px, 12vw, 150px);
+  }
+  svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+  circle {
+    fill: none;
+    stroke-width: 7;
+  }
+  .score--lg circle {
+    stroke-width: 6;
+  }
+  .track {
+    stroke: rgb(255 255 255 / 0.14);
+  }
+  .arc {
+    stroke: var(--orange-500);
+    stroke-linecap: round;
+  }
+  .value {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+  }
+  .num {
+    font-family: var(--font-display);
+    font-size: calc(var(--d) * 0.36);
+    letter-spacing: 0.01em;
+  }
+  .of {
+    font-size: calc(var(--d) * 0.12);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--slate-300);
+    margin-top: 0.25em;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    :global(.js) .score--lg .arc {
+      animation: draw 1.6s var(--ease-out) 0.3s both;
+    }
+  }
+  @keyframes draw {
+    from {
+      stroke-dashoffset: var(--c);
+    }
+  }
+</style>

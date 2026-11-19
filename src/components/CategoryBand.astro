@@ -1,0 +1,151 @@
+---
+import { Image } from 'astro:assets';
+import { CATEGORY_LIST } from '../data/categories';
+import type { CategorySlug } from '../data/categories';
+
+interface Props {
+  counts: Partial<Record<CategorySlug, number>>;
+  headingLevel?: 'h2' | 'h3';
+}
+const { counts, headingLevel = 'h3' } = Astro.props;
+const H = headingLevel;
+---
+
+<ul class="cats" role="list">
+  {
+    CATEGORY_LIST.map((c, i) => (
+      <li class="cat" data-reveal style={`--reveal-delay:${i * 80}ms`}>
+        <a href={`/${c.slug}/`} class="cat-link">
+          <div class="cat-media grain">
+            <Image
+              src={c.banner}
+              alt=""
+              widths={[480, 720, 960, 1280]}
+              sizes="(min-width: 900px) 40vw, (min-width: 560px) 50vw, 100vw"
+              loading="lazy"
+            />
+          </div>
+          <div class="cat-body">
+            <span class="cat-num">{String(i + 1).padStart(2, '0')}</span>
+            <H class="cat-name display">{c.shortName}</H>
+            <p class="cat-tag">{c.tagline}</p>
+            <p class="cat-count">
+              {counts[c.slug] ? `${counts[c.slug]} review${counts[c.slug] === 1 ? '' : 's'}` : 'Coming soon'}
+              <span aria-hidden="true">→</span>
+            </p>
+          </div>
+        </a>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .cats {
+    list-style: none;
+    display: flex;
+    gap: 0.75rem;
+    height: clamp(460px, 48vw, 620px);
+  }
+  .cat {
+    flex: 1 1 0;
+    min-width: 0;
+    transition: flex-grow 0.7s var(--ease-out);
+  }
+  .cats:hover .cat:hover,
+  .cats:focus-within .cat:focus-within {
+    flex-grow: 1.9;
+  }
+  .cat-link {
+    position: relative;
+    display: block;
+    height: 100%;
+    color: #fff;
+    text-decoration: none;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .cat-media {
+    position: absolute;
+    inset: 0;
+  }
+  .cat-media :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 1.2s var(--ease-out);
+  }
+  .cat-link:hover .cat-media :global(img) {
+    transform: scale(1.05);
+  }
+  .cat-media::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(180deg, rgb(7 12 22 / 0.15) 0%, rgb(7 12 22 / 0.1) 40%, rgb(7 12 22 / 0.92) 100%);
+  }
+  .cat-body {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: clamp(1rem, 2vw, 1.75rem);
+  }
+  .cat-num {
+    position: absolute;
+    top: clamp(1rem, 2vw, 1.5rem);
+    left: clamp(1rem, 2vw, 1.75rem);
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    color: #ff7a47;
+  }
+  .cat-name {
+    font-size: clamp(2.2rem, 1.4rem + 2.6vw, 4rem);
+    text-shadow: 0 2px 20px rgb(0 0 0 / 0.4);
+  }
+  .cat-tag {
+    margin-top: 0.5rem;
+    font-size: 0.92rem;
+    color: rgb(255 255 255 / 0.85);
+    max-width: 24ch;
+  }
+  .cat-count {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgb(255 255 255 / 0.25);
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  .cat-count span {
+    color: #ff7a47;
+    transition: transform 0.3s var(--ease-out);
+  }
+  .cat-link:hover .cat-count span {
+    transform: translateX(4px);
+  }
+  @media (max-width: 900px) {
+    .cats {
+      height: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .cat-link {
+      aspect-ratio: 4 / 5;
+    }
+  }
+  @media (max-width: 520px) {
+    .cats {
+      grid-template-columns: 1fr;
+    }
+    .cat-link {
+      aspect-ratio: 16 / 10;
+    }
+  }
+</style>

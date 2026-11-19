@@ -1,0 +1,139 @@
+---
+import '../styles/global.css';
+import antonWoff2 from '@fontsource/anton/files/anton-latin-400-normal.woff2?url';
+import type { ImageMetadata } from 'astro';
+import { getImage } from 'astro:assets';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { SITE } from '../site';
+import { absoluteUrl, type JsonLd } from '../lib/jsonld';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Social image: an astro:assets import (cropped to 1200x630) or a public path. */
+  image?: ImageMetadata | string;
+  imageAlt?: string;
+  type?: 'website' | 'article';
+  publishedTime?: Date;
+  modifiedTime?: Date;
+  jsonLd?: JsonLd[];
+  noindex?: boolean;
+  /** Override canonical path (defaults to current URL). */
+  canonicalPath?: string;
+}
+
+const {
+  title,
+  description = SITE.description,
+  image,
+  imageAlt = 'Upgrade My Run — running gear reviews',
+  type = 'website',
+  publishedTime,
+  modifiedTime,
+  jsonLd = [],
+  noindex = false,
+  canonicalPath,
+} = Astro.props;
+
+const fullTitle = title ? `${title} | ${SITE.name}` : `${SITE.name} — Running Gear Reviews & Recommendations`;
+const canonical = absoluteUrl(canonicalPath ?? Astro.url.pathname);
+
+let ogImage = absoluteUrl(SITE.ogDefault);
+let ogWidth = 1200;
+let ogHeight = 630;
+if (image && typeof image !== 'string') {
+  const og = await getImage({ src: image, width: 1200, height: 630, fit: 'cover', format: 'jpeg', quality: 80 });
+  ogImage = absoluteUrl(og.src);
+  ogWidth = Number(og.attributes.width ?? 1200);
+  ogHeight = Number(og.attributes.height ?? 630);
+} else if (typeof image === 'string') {
+  ogImage = absoluteUrl(image);
+}
+
+// Inline, render-blocking on purpose: sets theme before first paint (no flash).
+const themeScript = `(function(){var d=document.documentElement;d.classList.add('js');try{var t=localStorage.getItem('umr-theme');if(t==='light'||t==='dark')d.dataset.theme=t;}catch(e){}})();`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    {!noindex && <link rel="canonical" href={canonical} />}
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <script is:inline set:html={themeScript} />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content={SITE.themeColorDark} media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content={SITE.themeColorLight} media="(prefers-color-scheme: light)" />
+
+    <link rel="preload" href={antonWoff2} as="font" type="font/woff2" crossorigin />
+
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="alternate" type="application/rss+xml" title={`${SITE.name} — Reviews`} href="/rss.xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    <meta property="og:site_name" content={SITE.name} />
+    <meta property="og:locale" content={SITE.locale} />
+    <meta property="og:type" content={type} />
+    <meta property="og:title" content={title ?? fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content={String(ogWidth)} />
+    <meta property="og:image:height" content={String(ogHeight)} />
+    <meta property="og:image:alt" content={imageAlt} />
+    {publishedTime && <meta property="article:published_time" content={publishedTime.toISOString()} />}
+    {modifiedTime && <meta property="article:modified_time" content={modifiedTime.toISOString()} />}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title ?? fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={imageAlt} />
+
+    {jsonLd.map((node) => <script type="application/ld+json" set:html={JSON.stringify(node)} />)}
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <Header />
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <Footer />
+
+    <script>
+      // Progressive enhancement: reveal-on-scroll. Content is fully visible without JS
+      // (the hidden state only applies under html.js) and with reduced motion.
+      const els = document.querySelectorAll<HTMLElement>('[data-reveal]');
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduce || !('IntersectionObserver' in window)) {
+        els.forEach((el) => el.classList.add('is-visible'));
+      } else {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) {
+              if (e.isIntersecting) {
+                e.target.classList.add('is-visible');
+                io.unobserve(e.target);
+              }
+            }
+          },
+          { rootMargin: '0px 0px -8% 0px', threshold: 0.08 },
+        );
+        els.forEach((el) => io.observe(el));
+      }
+    </script>
+  </body>
+</html>
+
+<style>
+  main:focus {
+    outline: none;
+  }
+</style>

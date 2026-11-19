@@ -1,0 +1,152 @@
+---
+import Logo from './Logo.astro';
+import Newsletter from './Newsletter.astro';
+import { CATEGORY_LIST } from '../data/categories';
+import { SITE } from '../site';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-top">
+      <p class="footer-statement display" aria-hidden="true">Earn<br />{" "}every<br />{" "}<span>mile.</span></p>
+      <div class="footer-grid">
+        <div class="col col-brand">
+          <a href="/" class="brand-link" aria-label="Upgrade My Run — home"><Logo /></a>
+          <p class="blurb">{SITE.description}</p>
+        </div>
+        <nav class="col" aria-labelledby="f-cat">
+          <h2 id="f-cat" class="col-title">Categories</h2>
+          <ul>
+            {
+              CATEGORY_LIST.map((c) => (
+                <li>
+                  <a href={`/${c.slug}/`}>{c.name}</a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+        <nav class="col" aria-labelledby="f-site">
+          <h2 id="f-site" class="col-title">Upgrade My Run</h2>
+          <ul>
+            <li><a href="/reviews/">All reviews</a></li>
+            <li><a href="/best/">Best-of guides</a></li>
+            <li><a href="/about/">About &amp; how we test</a></li>
+            <li><a href="/disclosure/">Affiliate disclosure</a></li>
+            <li><a href="/rss.xml">RSS feed</a></li>
+          </ul>
+        </nav>
+        <div class="col col-news">
+          <Newsletter variant="compact" />
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© {year} Upgrade My Run. All rights reserved.</p>
+      <p>
+        We may earn a commission when you buy through links on this site. <a href="/disclosure/">Learn more</a>.
+      </p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-top: var(--space-3xl);
+    background: var(--bg-sunk);
+    border-top: 1px solid var(--rule);
+    padding-top: var(--space-2xl);
+    font-size: 0.92rem;
+  }
+  .footer-top {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 2fr);
+    gap: var(--space-2xl);
+  }
+  .footer-statement {
+    font-size: clamp(3rem, 7vw, 6.5rem);
+    color: var(--ink);
+    opacity: 0.95;
+  }
+  .footer-statement span {
+    color: var(--accent);
+  }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr 1fr;
+    gap: var(--space-xl);
+  }
+  .col-brand {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 2.5rem;
+    align-items: center;
+    padding-bottom: var(--space-l);
+    border-bottom: 1px solid var(--rule);
+  }
+  .brand-link {
+    text-decoration: none;
+  }
+  .blurb {
+    color: var(--ink-mute);
+    max-width: 36rem;
+  }
+  .col-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    margin-bottom: 1rem;
+  }
+  .col ul {
+    list-style: none;
+    display: grid;
+    gap: 0.55rem;
+  }
+  .col a {
+    text-decoration: none;
+    color: var(--ink-soft);
+  }
+  .col a:hover {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+  }
+  .footer-bottom {
+    margin-top: var(--space-2xl);
+    padding-block: 1.5rem 2rem;
+    border-top: 1px solid var(--rule);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.75rem 2rem;
+    font-size: 0.8rem;
+    color: var(--ink-mute);
+  }
+  .footer-bottom a {
+    color: var(--ink-soft);
+  }
+  @media (max-width: 1000px) {
+    .footer-top {
+      grid-template-columns: 1fr;
+    }
+    .footer-statement br {
+      display: none;
+    }
+    .footer-statement {
+      font-size: clamp(2.6rem, 11vw, 5rem);
+    }
+  }
+  @media (max-width: 760px) {
+    .footer-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+    .col-news {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

@@ -1,0 +1,87 @@
+---
+interface Props {
+  pros: string[];
+  cons: string[];
+}
+const { pros, cons } = Astro.props;
+---
+
+<section class="pc" aria-label="Pros and cons">
+  <div class="pc-col pc-pros">
+    <h2 class="pc-title"><span class="pc-icon" aria-hidden="true">+</span> What we like</h2>
+    <ul>{pros.map((p) => <li>{p}</li>)}</ul>
+  </div>
+  <div class="pc-col pc-cons">
+    <h2 class="pc-title"><span class="pc-icon" aria-hidden="true">−</span> What we don’t</h2>
+    <ul>{cons.map((c) => <li>{c}</li>)}</ul>
+  </div>
+</section>
+
+<style>
+  .pc {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(1rem, 3vw, 2rem);
+  }
+  .pc-col {
+    border-top: 3px solid var(--ink);
+    padding-top: 1rem;
+  }
+  .pc-pros {
+    border-color: var(--accent);
+  }
+  .pc-title {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .pc-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    font-size: 1.1rem;
+    line-height: 1;
+    background: var(--ink);
+    color: var(--bg);
+  }
+  .pc-pros .pc-icon {
+    background: var(--accent);
+    color: var(--accent-contrast);
+  }
+  ul {
+    list-style: none;
+    margin-top: 1rem;
+    display: grid;
+    gap: 0.75rem;
+  }
+  li {
+    position: relative;
+    padding-left: 1.2rem;
+    color: var(--ink-soft);
+    font-size: 0.98rem;
+    line-height: 1.5;
+  }
+  li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.62em;
+    width: 0.5rem;
+    height: 2px;
+    background: var(--ink-mute);
+  }
+  .pc-pros li::before {
+    background: var(--accent);
+  }
+  @media (max-width: 620px) {
+    .pc {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

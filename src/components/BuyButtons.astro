@@ -1,0 +1,109 @@
+---
+import { formatPrice } from '../lib/content';
+
+interface Link {
+  retailer: string;
+  url: string;
+  price?: number | undefined;
+}
+interface Props {
+  links: Link[];
+  productName: string;
+  layout?: 'stack' | 'row';
+  disclosure?: boolean;
+}
+const { links, productName, layout = 'stack', disclosure = true } = Astro.props;
+// Every outbound affiliate link MUST carry rel="sponsored nofollow noopener" + target="_blank".
+const REL = 'sponsored nofollow noopener';
+---
+
+{
+  links.length > 0 && (
+    <div class:list={['buy', `buy--${layout}`]}>
+      <ul class="buy-list">
+        {links.map((l, i) => (
+          <li>
+            <a
+              class:list={['buy-link', i === 0 && 'is-primary']}
+              href={l.url}
+              rel={REL}
+              target="_blank"
+              aria-label={`Buy ${productName} at ${l.retailer}${l.price ? ` for ${formatPrice(l.price)}` : ''} (opens in a new tab)`}>
+              <span class="retailer">{l.retailer}</span>
+              <span class="price">{l.price ? formatPrice(l.price) : 'Check price'}</span>
+              <svg class="ext" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                <path d="M5 3h8v8M13 3 3 13" fill="none" stroke="currentColor" stroke-width="2" />
+              </svg>
+            </a>
+          </li>
+        ))}
+      </ul>
+      {disclosure && (
+        <p class="disclosure">
+          We may earn a commission if you buy through these links, at no extra cost to you. It never affects our
+          verdicts. <a href="/disclosure/">How we make money</a>.
+        </p>
+      )}
+    </div>
+  )
+}
+
+<style>
+  .buy-list {
+    list-style: none;
+    display: grid;
+    gap: 0.5rem;
+  }
+  .buy--row .buy-list {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+  .buy-link {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 0.9rem;
+    min-height: 52px;
+    padding: 0.7rem 1rem;
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius);
+    text-decoration: none;
+    font-weight: 650;
+    transition:
+      border-color 0.2s,
+      background-color 0.2s,
+      transform 0.2s var(--ease-out);
+  }
+  .buy-link:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+  .buy-link.is-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-contrast);
+  }
+  .buy-link.is-primary:hover {
+    background: #ff7a47;
+  }
+  .retailer {
+    font-size: 0.92rem;
+  }
+  .price {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+  }
+  .ext {
+    opacity: 0.7;
+  }
+  .disclosure {
+    margin-top: 0.8rem;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--ink-mute);
+  }
+  .disclosure a {
+    color: var(--ink-soft);
+  }
+</style>
